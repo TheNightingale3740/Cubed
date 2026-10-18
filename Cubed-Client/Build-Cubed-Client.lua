@@ -28,7 +28,12 @@ project "Cubed-Client"
     links
     {
         "Cubed-Common",
-        "Walnut"
+        "Walnut",
+
+        -- Walnut::Client/Server live here, and neither premake's gmake nor its
+        -- VS action propagates a static library's own links to the projects that
+        -- depend on it, so the module has to be named explicitly.
+        "Walnut-Networking"
     }
 
    targetdir ("../bin/" .. outputdir .. "/%{prj.name}")
@@ -42,12 +47,23 @@ project "Cubed-Client"
       defines { "WL_PLATFORM_WINDOWS" }
       buildoptions { "/utf-8" }
 
+      -- The module's own dependencies are not inherited either.
+      links { "Ws2_32.lib" }
+
       postbuildcommands 
       {
         '{COPY} "../%{WalnutNetworkingBinDir}/GameNetworkingSockets.dll" "%{cfg.targetdir}"',
         '{COPY} "../%{WalnutNetworkingBinDir}/libcrypto-3-x64.dll" "%{cfg.targetdir}"',
         '{COPY} "../%{WalnutNetworkingBinDir}/libprotobufd.dll" "%{cfg.targetdir}"',
       }
+
+   filter { "system:windows", "configurations:Debug" }
+      links { "../%{WalnutNetworkingBinDir}/GameNetworkingSockets.lib" }
+
+   filter { "system:windows", "configurations:Release or configurations:Dist" }
+      -- There is no Dist build of the prebuilt binaries, so Dist ships the
+      -- Release ones.
+      links { "../Walnut/Walnut-Modules/Walnut-Networking/vendor/GameNetworkingSockets/bin/Windows/Release/GameNetworkingSockets.lib" }
 
    filter "system:macosx"
       defines { "WL_PLATFORM_MACOS" }
